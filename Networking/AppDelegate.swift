@@ -14,6 +14,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        Networking.initialize(with: deployment.networkConfig)
         return true
     }
 
@@ -34,3 +35,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 }
 
+
+let deployment: Environment = {
+    #if DEBUG
+    return .debug
+    #endif
+    return .release
+}()
+
+enum Environment {
+    case debug
+    case release
+    
+    var networkConfig: NetworkingConfiguration {
+        switch self {
+            
+        case .debug:
+          return  NetworkingConfiguration(baseURL: "https://staging.foodmandu.com/webapi/api/v2",
+                                          clientId: "",
+                                          clientSecret: "")
+        case .release:
+         return  NetworkingConfiguration(baseURL: "https://foodmandu.com/webapi/api/v2",
+                                         clientId: "",
+                                         clientSecret: "")
+        }
+    }
+    
+}

@@ -21,7 +21,10 @@ class KeyChainManager {
     
     //GET ANY TYPE OF CODABLE OBJECT IN KEYCHAIN
     public func retrieve<T: Codable>(type: T.Type, forKey key: String) -> T? {
-        let dataObject = KeychainWrapper.standard.data(forKey: key) ?? Data()
+        guard  let dataObject = KeychainWrapper.standard.data(forKey: key) else {
+            print("\(T.self) NO_DATA SAVED")
+            return nil
+        }
         return KeyChainManager.standard.decode(json: dataObject, as: type)
     }
     

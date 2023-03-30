@@ -35,7 +35,7 @@ public struct NetworkingError: LocalizedError {
     init(_ urlError: URLError) {
         switch urlError.code {
         case .networkConnectionLost, .dataNotAllowed, .notConnectedToInternet:
-            self.reason = "Nework connection not available"
+            self.reason = "Network connection not available"
         default:
             self.reason = urlError.localizedDescription
         }

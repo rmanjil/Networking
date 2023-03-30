@@ -6,12 +6,19 @@
 //
 
 import UIKit
+struct None: Decodable {
+    
+}
 
 class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        Task {
+            let test: RequestMaker.NetworkResult<ApiResponse<None>>  = await   Networking.default.dataRequest(router: UserRouter.home)
+            print(test)
+        }
     }
 
 

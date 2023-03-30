@@ -16,7 +16,7 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         Task {
-            let test: RequestMaker.NetworkResult<ApiResponse<None>>  = await   Networking.default.dataRequest(router: UserRouter.home)
+            _ = await Networking.default.dataRequest(router: UserRouter.home, type: None.self)
         }
     }
 

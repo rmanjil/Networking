@@ -51,12 +51,10 @@ enum UserRouter: NetworkingRouter {
         }
     }
     
-    
     var httpMethod: HTTPMethod {
         switch self {
-            
         case .login:
-           return .get
+           return .post
         case .home, .search:
             return .get
         }
@@ -64,7 +62,6 @@ enum UserRouter: NetworkingRouter {
     
     var encoder: [EncoderType] {
         switch self {
-            
         case .login(let parameter):
             return [.json(parameter)]
         case .home, .search:

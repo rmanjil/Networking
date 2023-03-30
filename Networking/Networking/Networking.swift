@@ -9,7 +9,7 @@ import Foundation
 
 protocol NetworkConformable {
     static func initialize(with config: NetworkingConfiguration)
-    func dataRequest<O>(router: NetworkingRouter) async -> RequestMaker.NetworkResult<ApiResponse<O>>
+    func dataRequest<O>(router: NetworkingRouter, type: O.Type) async -> RequestMaker.NetworkResult<ApiResponse<O>>
 }
 
 class Networking: NetworkConformable {
@@ -28,7 +28,7 @@ class Networking: NetworkConformable {
     }
     
     /// Method to create a response publisher for data
-    func dataRequest<O>(router: NetworkingRouter) async -> RequestMaker.NetworkResult<ApiResponse<O>> where O : Decodable {
+    func dataRequest<O>(router: NetworkingRouter, type: O.Type) async -> RequestMaker.NetworkResult<ApiResponse<O>> where O : Decodable {
         await createAndPerformRequest(router, config: Networking.default.config)
     }
     

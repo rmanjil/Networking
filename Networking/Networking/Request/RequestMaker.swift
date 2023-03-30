@@ -6,6 +6,20 @@
 //
 
 import Foundation
+public struct File {
+    
+    public let name: String
+    public let fileName: String
+    public let data: Data
+    public let contentType: String
+    
+    public init(name: String, fileName: String, data: Data, contentType: String) {
+        self.name = name
+        self.fileName = fileName
+        self.data = data
+        self.contentType = contentType
+    }
+}
 
 struct RequestMaker {
     typealias NetworkResult<O: Decodable> = (Result<NetworkingResponse<O>, NetworkingError>)
@@ -29,18 +43,29 @@ struct RequestMaker {
         }
     }
     
-    private func tokenValidation<O>(_ session: URLSession, request: URLRequest) async -> NetworkResult<ApiResponse<O>> {
+    func makeMultiRequest<O>(multipart: [File]) async -> NetworkResult<ApiResponse<O>> {
+        do {
+            let request = try RequestBuilder(router: router, config: config).getMultipartRequest()
+            let session  = URLSession(configuration: config.sessionConfiguration)
+            return await tokenValidation(session, request: request.request, parameters: request.parameters, multipart: multipart)
+        } catch {
+            return .failure(NetworkingError(error))
+        }
+    }
+    
+    
+    private func tokenValidation<O>(_ session: URLSession, request: URLRequest, parameters: Parameters = [:], multipart: [File] = []) async -> NetworkResult<ApiResponse<O>> {
         guard router.needsAuthorization else {
-            return await normalRequest(session, request: request)
+            return await checkMultipartThenRequest(session, request: request, parameters: parameters, multipart: multipart)
         }
         
         if tokenManager.isTokenValid() {
-            return await normalRequest(session, request: request)
+            return await checkMultipartThenRequest(session, request: request, parameters: parameters, multipart: multipart)
         }
         guard await refreshToken()  else {
             return .failure(NetworkingError("TOKEN_EXPIRE"))
         }
-        return await normalRequest(session, request: request)
+        return await checkMultipartThenRequest(session, request: request, parameters: parameters, multipart: multipart)
     }
     
     private func refreshToken() async -> Bool {
@@ -66,6 +91,13 @@ struct RequestMaker {
         }
     }
     
+    private func checkMultipartThenRequest<O>(_ session: URLSession, request: URLRequest, parameters: Parameters, multipart: [File]) async -> NetworkResult<ApiResponse<O>> {
+        if multipart.isEmpty {
+            return  await normalRequest(session, request: request)
+        }
+        return await multipartRequest(session, request: request, parameters: parameters, multipart: multipart)
+    }
+    
     private func normalRequest<O>(_ session: URLSession, request: URLRequest) async -> NetworkResult<ApiResponse<O>> {
         do {
             let  (data, response)   = try await session.data(for: request)
@@ -75,5 +107,31 @@ struct RequestMaker {
         } catch {
             return .failure(NetworkingError(error))
         }
+    }
+    
+    private func multipartRequest<O>(_ session: URLSession, request: URLRequest, parameters: Parameters, multipart: [File]) async -> NetworkResult<ApiResponse<O>> {
+        let boundary = UUID().uuidString
+        var request = request
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        let bodyData = createBodyWithMultipleImages(parameters: parameters, multipart: multipart, boundary: <#T##String#>)
+        
+    }
+    
+    private func createBodyWithMultipleImages(parameters: Parameters, multipart: [File], boundary: String) -> Data {
+        var body = Data()
+            for (key, value) in parameters {
+                body.append("--\(boundary)\r\n".data(using: .utf8)!)
+                body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
+                body.append("\(value)\r\n".data(using: .utf8)!)
+            }
+        multipart.forEach{
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\($0.name)\"; filename=\"\($0.fileName)\"\r\n".data(using: .utf8)!)
+            body.append("Content-Type: \($0.contentType)\r\n\r\n".data(using: .utf8)!)
+            body.append($0.data)
+            body.append("\r\n".data(using: .utf8)!)
+        }
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        return body
     }
 }

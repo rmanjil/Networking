@@ -69,20 +69,11 @@ struct RequestMaker {
     private func normalRequest<O>(_ session: URLSession, request: URLRequest) async -> NetworkResult<ApiResponse<O>> {
         do {
             let  (data, response)   = try await session.data(for: request)
-            printLog(data: data, response: response)
+            Logger.log(response, request: request, data: data)
             let object =  try JSONDecoder().decode(ApiResponse<O>.self, from: data)
             return .success(NetworkingResponse.networkResponse(for: router, data: data, request: request, response: response, object: object))
         } catch {
             return .failure(NetworkingError(error))
-        }
-    }
-    
-    func printLog(data: Data, response: URLResponse) {
-        do {
-            let json = try JSONSerialization.jsonObject(with: data)
-            print("json \(json)")
-        } catch {
-            print(error.localizedDescription)
         }
     }
 }

@@ -14,7 +14,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
-        Networking.initialize(with: deployment.networkConfig)
+        Networking.initialize(with: Environment.networkConfig())
         return true
     }
 
@@ -35,30 +35,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 }
 
-
-let deployment: Environment = {
-    #if DEBUG
-    return .debug
-    #endif
-    return .release
-}()
-
 enum Environment {
-    case debug
-    case release
-    
-    var networkConfig: NetworkingConfiguration {
-        switch self {
-            
-        case .debug:
-          return  NetworkingConfiguration(baseURL: "https://staging.foodmandu.com/webapi/api/v2",
-                                          clientId: "",
-                                          clientSecret: "")
-        case .release:
-         return  NetworkingConfiguration(baseURL: "https://foodmandu.com/webapi/api/v2",
-                                         clientId: "",
-                                         clientSecret: "")
+    static func networkConfig() -> NetworkingConfiguration {
+        guard let baseURL = Bundle.main.infoDictionary?["APP_API_BASE_URL"] as? String,
+              let clientId = Bundle.main.infoDictionary?["APP_CLIENT_ID"] as? String,
+              let clientSecret = Bundle.main.infoDictionary?["APP_CLIENT_SECRET"] as? String else {
+            assertionFailure("check for APP_API_BASE_URL, APP_CLIENT_ID and APP_CLIENT_SECRET in Info.plist and Target's Build Setting")
+            return NetworkingConfiguration(baseURL: "", clientId: "", clientSecret: "")
         }
+        return NetworkingConfiguration(baseURL: baseURL, clientId: clientId, clientSecret: clientSecret)
     }
-    
 }

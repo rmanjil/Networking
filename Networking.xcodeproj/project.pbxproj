@@ -36,6 +36,7 @@
 		2A8D900F29D53F49000ED1C3 /* NetworkingConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8D8FFC29D53F48000ED1C3 /* NetworkingConfiguration.swift */; };
 		2A8D901029D53F49000ED1C3 /* NetworkingRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8D8FFD29D53F48000ED1C3 /* NetworkingRouter.swift */; };
 		2A8D901329D55533000ED1C3 /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = 2A8D901229D55533000ED1C3 /* SwiftKeychainWrapper */; };
+		2A8D901629D57182000ED1C3 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8D901529D57182000ED1C3 /* Logger.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +89,7 @@
 		2A8D8FFB29D53F48000ED1C3 /* RequestMaker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RequestMaker.swift; sourceTree = "<group>"; };
 		2A8D8FFC29D53F48000ED1C3 /* NetworkingConfiguration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NetworkingConfiguration.swift; sourceTree = "<group>"; };
 		2A8D8FFD29D53F48000ED1C3 /* NetworkingRouter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NetworkingRouter.swift; sourceTree = "<group>"; };
+		2A8D901529D57182000ED1C3 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -183,6 +185,7 @@
 				2A8D8FF829D53F48000ED1C3 /* Request */,
 				2A8D8FFC29D53F48000ED1C3 /* NetworkingConfiguration.swift */,
 				2A8D8FFD29D53F48000ED1C3 /* NetworkingRouter.swift */,
+				2A8D901529D57182000ED1C3 /* Logger.swift */,
 			);
 			path = Networking;
 			sourceTree = "<group>";
@@ -380,6 +383,7 @@
 				2A8D900729D53F49000ED1C3 /* KeyChainManager.swift in Sources */,
 				2A8D900929D53F49000ED1C3 /* ResponseParser.swift in Sources */,
 				2A8D900429D53F49000ED1C3 /* ApiResponse.swift in Sources */,
+				2A8D901629D57182000ED1C3 /* Logger.swift in Sources */,
 				2A8D8FB629D53EEC000ED1C3 /* AppDelegate.swift in Sources */,
 				2A8D901029D53F49000ED1C3 /* NetworkingRouter.swift in Sources */,
 				2A8D900029D53F49000ED1C3 /* NetworkingError.swift in Sources */,
@@ -565,6 +569,9 @@
 		2A8D8FDD29D53EEF000ED1C3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APP_API_BASE_URL = "https://staging.foodmandu.com/webapi/api/v2";
+				APP_CLIENT_ID = "";
+				APP_CLIENT_SECRET = "";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -593,6 +600,9 @@
 		2A8D8FDE29D53EEF000ED1C3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APP_API_BASE_URL = "https://foodmandu.com/webapi/api/v2";
+				APP_CLIENT_ID = "";
+				APP_CLIENT_SECRET = "";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;

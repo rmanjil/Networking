@@ -37,7 +37,7 @@ struct RequestMaker {
         if tokenManager.isTokenValid() {
             return await normalRequest(session, request: request)
         }
-        guard  await refreshToken()  else {
+        guard await refreshToken()  else {
             return .failure(NetworkingError("TOKEN_EXPIRE"))
         }
         return await normalRequest(session, request: request)

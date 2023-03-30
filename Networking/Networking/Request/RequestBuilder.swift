@@ -28,8 +28,10 @@ struct RequestBuilder {
         router.headers.forEach({ request.addValue($0, forHTTPHeaderField: $1) })
         request.addValue(config.clientId, forHTTPHeaderField: "client_id")
         request.addValue(config.clientSecret, forHTTPHeaderField: "client_secret")
-        if let token = TokenManager().token?.accessToken {
-            request.addValue("bearer " + token, forHTTPHeaderField: "client_secret")
+        if let token = TokenManager().token,
+           let accessToken = token.accessToken,
+           let type = token.tokenType  {
+            request.addValue("\(type) \(accessToken)", forHTTPHeaderField: "Authorization")
         }
         try router.encoder.forEach { type in
             switch type {

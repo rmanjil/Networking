@@ -17,14 +17,9 @@ struct RequestBuilder {
     let config: NetworkingConfiguration
     
     /// Gets the request with config and router info
-    /// - Returns: The URLResquest to use
+    /// - Returns: The URLRequest to use
     func getRequest() throws -> URLRequest {
-        let baseURL = router.overridenBaseURL ?? config.baseURL
-        guard let url = URL(string: baseURL)?.appendingPathComponent(router.path) else {
-            throw NetworkingError(.invalidBaseURL)
-        }
-        
-        var request = createRequest(url: url)
+        var request = try createRequest()
     
         try router.encoder.forEach { type in
             switch type {
@@ -40,12 +35,7 @@ struct RequestBuilder {
     /// Gets the request with config and router info
     /// - Returns: The URLResquest to use
     func getMultipartRequest() throws -> (request: URLRequest, parameters: Parameters) {
-        let baseURL = router.overridenBaseURL ?? config.baseURL
-        guard let url = URL(string: baseURL)?.appendingPathComponent(router.path) else {
-            throw NetworkingError(.invalidBaseURL)
-        }
-        
-        let request = createRequest(url: url)
+        let request = try createRequest()
         
         var parameters = Parameters()
         router.encoder.forEach { type in
@@ -67,7 +57,13 @@ struct RequestBuilder {
         return (request, parameters)
     }
     
-    private func createRequest(url: URL) -> URLRequest {
+    private func createRequest() throws -> URLRequest {
+        let baseURL = router.overridenBaseURL ?? config.baseURL
+        
+        guard let url = URL(string: baseURL)?.appendingPathComponent(router.path) else {
+            throw NetworkingError(.invalidBaseURL)
+        }
+        
         var request = URLRequest(url: url)
         request.httpMethod = router.httpMethod.identifier
         router.headers.forEach({ request.addValue($0, forHTTPHeaderField: $1) })

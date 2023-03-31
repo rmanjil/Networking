@@ -99,6 +99,20 @@ struct RequestMaker {
     }
     
     private func normalRequest<O>(_ session: URLSession, request: URLRequest) async -> NetworkResult<ApiResponse<O>> {
+        await callApi(session, request: request)
+    }
+    
+    private func multipartRequest<O>(_ session: URLSession, request: URLRequest, parameters: Parameters, multipart: [File]) async -> NetworkResult<ApiResponse<O>> {
+        let boundary = UUID().uuidString
+        var request = request
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        let bodyData = createBodyWithMultipleImages(parameters: parameters, multipart: multipart, boundary: boundary)
+        request.httpBody = bodyData
+        
+        return await callApi(session, request: request)
+    }
+    
+    private func callApi<O>(_ session: URLSession, request: URLRequest)  async -> NetworkResult<ApiResponse<O>> {
         do {
             let  (data, response)   = try await session.data(for: request)
             Logger.log(response, request: request, data: data)
@@ -109,22 +123,14 @@ struct RequestMaker {
         }
     }
     
-    private func multipartRequest<O>(_ session: URLSession, request: URLRequest, parameters: Parameters, multipart: [File]) async -> NetworkResult<ApiResponse<O>> {
-        let boundary = UUID().uuidString
-        var request = request
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        let bodyData = createBodyWithMultipleImages(parameters: parameters, multipart: multipart, boundary: <#T##String#>)
-        
-    }
-    
     private func createBodyWithMultipleImages(parameters: Parameters, multipart: [File], boundary: String) -> Data {
         var body = Data()
-            for (key, value) in parameters {
-                body.append("--\(boundary)\r\n".data(using: .utf8)!)
-                body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
-                body.append("\(value)\r\n".data(using: .utf8)!)
-            }
-        multipart.forEach{
+        for (key, value) in parameters {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(value)\r\n".data(using: .utf8)!)
+        }
+        multipart.forEach {
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"\($0.name)\"; filename=\"\($0.fileName)\"\r\n".data(using: .utf8)!)
             body.append("Content-Type: \($0.contentType)\r\n\r\n".data(using: .utf8)!)

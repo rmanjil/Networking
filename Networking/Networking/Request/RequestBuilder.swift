@@ -45,7 +45,7 @@ struct RequestBuilder {
             throw NetworkingError(.invalidBaseURL)
         }
         
-        var request = createRequest(url: url)
+        let request = createRequest(url: url)
         
         var parameters = Parameters()
         router.encoder.forEach { type in

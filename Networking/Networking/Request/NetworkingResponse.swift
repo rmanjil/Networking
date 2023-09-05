@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct NetworkingResponse<T: Decodable> {
+struct NetworkingResponse<T> {
     let data: Data?
     let object: T?
     let urlRequest: URLRequest
@@ -15,10 +15,17 @@ struct NetworkingResponse<T: Decodable> {
     let router: NetworkingRouter
     let statusCode: Int
     
-    static func networkResponse(for router: NetworkingRouter, data: Data, request: URLRequest, response: URLResponse, object: T?) -> NetworkingResponse {
-        guard let urlResponse = response as? HTTPURLResponse else {
-            return NetworkingResponse(data: data, object: object, urlRequest: request, urlResponse: response, router: router, statusCode: 0)
+    init(router: NetworkingRouter, data: Data?, request: URLRequest, response: URLResponse, object: T?) {
+        self.router = router
+        self.data = data
+        self.object = object
+        self.urlRequest = request
+        self.urlResponse = response
+        
+        if let httpURLResponse = response as? HTTPURLResponse {
+            self.statusCode = httpURLResponse.statusCode
+        } else {
+            self.statusCode = 0
         }
-        return NetworkingResponse(data: data, object: object, urlRequest: request, urlResponse: response, router: router, statusCode: urlResponse.statusCode)
     }
 }

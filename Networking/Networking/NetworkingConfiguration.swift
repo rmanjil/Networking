@@ -13,15 +13,19 @@ struct NetworkingConfiguration {
     let baseURL: String
     let clientId: String
     let clientSecret: String
+    let parameter: [String: String]
+    let tokenManageable: TokenManageable
     
     /// The url session connfiguration
     let sessionConfiguration: URLSessionConfiguration
     
-    public init(baseURL: String, clientId: String, clientSecret: String, sessionConfiguration: URLSessionConfiguration = URLSessionConfiguration.default) {
+    public init(baseURL: String, clientId: String, clientSecret: String, parameter: [String: String] = [:], tokenManageable: TokenManageable, sessionConfiguration: URLSessionConfiguration = URLSessionConfiguration.default) {
         self.baseURL = baseURL
         self.clientId = clientId
         self.clientSecret = clientSecret
+        self.parameter = parameter
         self.sessionConfiguration = sessionConfiguration
+        self.tokenManageable = tokenManageable
     }
     
     /// The configuration information

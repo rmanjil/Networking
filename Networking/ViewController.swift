@@ -16,7 +16,7 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         Task {
-            _ = await Networking.default.dataRequest(router: UserRouter.home, type: None.self)
+            _ = try? await Networking.default.dataRequest(router: UserRouter.home, type: None.self)
         }
     }
 

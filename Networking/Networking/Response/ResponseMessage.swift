@@ -11,7 +11,7 @@ public struct ResponseMessage: Decodable {
     
     public var title : String?
     public var detail : String?
-    public var code: String?
+    public var code: Int?
     
     init(detail: String) {
         self.detail = detail
@@ -27,7 +27,7 @@ public struct ResponseMessage: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try container.decodeIfPresent(String.self, forKey: .title) 
         detail = try container.decodeIfPresent(String.self, forKey: .detail)
-        code = try container.decodeIfPresent(String.self, forKey: .code)
+        code = try container.decodeIfPresent(Int.self, forKey: .code)
     }
     
 }

@@ -27,9 +27,9 @@ public struct NetworkingError: LocalizedError {
     private let reason: String
     public let code: Int
     
-    public init(_ reason: String) {
+    public init(_ reason: String, code: Int = 0) {
         self.reason = reason
-        self.code = 0
+        self.code = code
     }
     
     init(_ urlError: URLError) {

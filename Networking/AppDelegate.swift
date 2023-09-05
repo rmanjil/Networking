@@ -41,8 +41,8 @@ enum Environment {
               let clientId = Bundle.main.infoDictionary?["APP_CLIENT_ID"] as? String,
               let clientSecret = Bundle.main.infoDictionary?["APP_CLIENT_SECRET"] as? String else {
             assertionFailure("check for APP_API_BASE_URL, APP_CLIENT_ID and APP_CLIENT_SECRET in Info.plist and Target's Build Setting")
-            return NetworkingConfiguration(baseURL: "", clientId: "", clientSecret: "")
+            return NetworkingConfiguration(baseURL: "", clientId: "", clientSecret: "", tokenManageable: TokenManager())
         }
-        return NetworkingConfiguration(baseURL: baseURL, clientId: clientId, clientSecret: clientSecret)
+        return NetworkingConfiguration(baseURL: baseURL, clientId: clientId, clientSecret: clientSecret, tokenManageable: TokenManager())
     }
 }

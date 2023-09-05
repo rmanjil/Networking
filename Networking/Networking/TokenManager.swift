@@ -42,7 +42,28 @@ public class AuthModel: Codable {
     
 }
 
-class TokenManager {
+protocol TokenManageable {
+    func refreshToken() async -> Bool
+    func isTokenValid() -> Bool
+    var tokenParam: [String: String] {get }
+    
+}
+
+class TokenManager: TokenManageable {
+    
+    func refreshToken() async -> Bool {
+//        do {
+//            let value = try  await Networking.default.dataRequest(router: AuthRouter.refreshToken(param), type: ApiResponse<AuthModel>.self)
+//            token = try ekParser(value: value.data)
+//            return true
+//        } catch {
+//            print(error.localizedDescription)
+//        }
+//        KeyChainManager().clear("TOKEN")
+//        NotificationCenter.default.post(name: .tokenExpire, object: nil)
+        return false
+    }
+    
     var token: AuthModel? {
         set {
             if let newValue {
@@ -59,5 +80,37 @@ class TokenManager {
             return Date().compare(expiryDate) == ComparisonResult.orderedAscending
         }
         return false
+    }
+    
+    var param: Parameters {
+        if let token {
+            return ["grantType": "refresh_token", "refreshToken": token.refreshToken ?? ""]
+        }
+        return [:]
+    }
+    
+    var tokenParam: [String: String] {
+        if let token =  token,
+           let accessToken = token.accessToken,
+           let type = token.tokenType {
+            return  ["Authorization": "\(type) \(accessToken)"]
+        }
+        
+        return [:]
+    }
+}
+
+
+extension NSNotification.Name {
+    static let tokenExpire = NSNotification.Name("TOKEN_EXPIRE")
+}
+
+func ekParser<O: Decodable>(value: ApiResponse<O>) throws -> O {
+    if let model = value.data {
+        return model
+    } else if let error = value.errors?.first {
+        throw NetworkingError(error.detail ?? "ERROR_IS_MISSING_\(O.self)", code: error.code ?? 0)
+    } else {
+        throw NetworkingError("\(O.self)_MODEL_NOT_FOUND")
     }
 }

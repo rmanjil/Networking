@@ -22,105 +22,113 @@ public struct File {
 }
 
 struct RequestMaker {
-    typealias NetworkResult<O: Decodable> = (Result<NetworkingResponse<O>, NetworkingError>)
+    typealias NetworkResult<O> = (Result<NetworkingResponse<O>, NetworkingError>)
     private let router: NetworkingRouter
     private let config: NetworkingConfiguration
-    private let tokenManager = TokenManager()
     
     init(router: NetworkingRouter, config: NetworkingConfiguration) {
         self.router = router
         self.config = config
     }
     
+    func makeDataRequest<O>() async -> NetworkResult<O> {
+        return await performRequest()
+    }
     
-    func makeDataRequest<O>() async -> NetworkResult<ApiResponse<O>> {
+    func makeMultiRequest<O>(multipart: [File]) async -> NetworkResult<O> {
+        return await performRequest(multipart: multipart)
+    }
+    
+    private func performRequest<O>(multipart: [File] = []) async -> NetworkResult<O> {
         do {
-            let request = try RequestBuilder(router: router, config: config).getRequest()
+            let requestBuilder = RequestBuilder(router: router, config: config)
+            let request: URLRequest
+            var parameter: Parameters = [:]
+            if  multipart.isEmpty { request = try requestBuilder.getRequest() } else {
+                let multi =  try requestBuilder.getMultipartRequest()
+                request = multi.request
+                parameter = multi.parameters
+            }
             let session  = URLSession(configuration: config.sessionConfiguration)
-            return await tokenValidation(session, request: request)
+            return await tokenValidation(session, request: request, parameters: parameter, multipart: multipart)
         } catch {
             return .failure(NetworkingError(error))
         }
     }
     
-    func makeMultiRequest<O>(multipart: [File]) async -> NetworkResult<ApiResponse<O>> {
-        do {
-            let request = try RequestBuilder(router: router, config: config).getMultipartRequest()
-            let session  = URLSession(configuration: config.sessionConfiguration)
-            return await tokenValidation(session, request: request.request, parameters: request.parameters, multipart: multipart)
-        } catch {
-            return .failure(NetworkingError(error))
-        }
-    }
-    
-    
-    private func tokenValidation<O>(_ session: URLSession, request: URLRequest, parameters: Parameters = [:], multipart: [File] = []) async -> NetworkResult<ApiResponse<O>> {
-        guard router.needsAuthorization else {
-            return await checkMultipartThenRequest(session, request: request, parameters: parameters, multipart: multipart)
-        }
-        
-        if tokenManager.isTokenValid() {
-            return await checkMultipartThenRequest(session, request: request, parameters: parameters, multipart: multipart)
-        }
-        guard await refreshToken()  else {
+    private func tokenValidation<O>(_ session: URLSession, request: URLRequest, parameters: Parameters = [:], multipart: [File] = []) async -> NetworkResult<O> {
+        if  router.needsAuthorization,  await !updateTokenIfNeeded()  {
             return .failure(NetworkingError("TOKEN_EXPIRE"))
         }
         return await checkMultipartThenRequest(session, request: request, parameters: parameters, multipart: multipart)
     }
     
-    private func refreshToken() async -> Bool {
-        do {
-            let request = try RequestBuilder(router: UserRouter.home, config: config).getRequest()
-            let session  = URLSession(configuration: config.sessionConfiguration)
-            let result: NetworkResult<ApiResponse<AuthModel>> = await normalRequest(session, request: request)
-            switch result {
-            case .success(let response):
-                guard let object = response.object?.data else {
-                    return false
-                }
-                tokenManager.token = object
-                print("object: \(object)")
-                return true
-            case .failure(let error):
-                print(error.localizedDescription)
-                return false
-            }
-        } catch {
-            print(error.localizedDescription)
-            return false
+    private func updateTokenIfNeeded() async -> Bool  {
+        guard config.tokenManageable.isTokenValid() else {
+            return await refreshToken()
         }
+        return true
     }
     
-    private func checkMultipartThenRequest<O>(_ session: URLSession, request: URLRequest, parameters: Parameters, multipart: [File]) async -> NetworkResult<ApiResponse<O>> {
+    private func refreshToken() async -> Bool {
+        await config.tokenManageable.refreshToken()
+    }
+    
+    private func checkMultipartThenRequest<O>(_ session: URLSession, request: URLRequest, parameters: Parameters, multipart: [File]) async -> NetworkResult<O> {
         if multipart.isEmpty {
             return  await normalRequest(session, request: request)
         }
         return await multipartRequest(session, request: request, parameters: parameters, multipart: multipart)
     }
     
-    private func normalRequest<O>(_ session: URLSession, request: URLRequest) async -> NetworkResult<ApiResponse<O>> {
-        await callApi(session, request: request)
+    private func normalRequest<O>(_ session: URLSession, request: URLRequest) async -> RequestMaker.NetworkResult<O> {
+        do {
+            let (data, response)  = try await session.data(for: request)
+            Logger.log(response, request: request, data: data)
+            if let decodableType = O.self as? Decodable.Type {
+                let object =  try JSONDecoder().decode(decodableType, from: data)
+                let  networkResponse = NetworkingResponse<O>(router: router, data: data, request: request, response: response, object: object as? O)
+                return  await handleResponse(networkResponse: networkResponse, session: session, request: request)
+            }
+            if let string = String(data: data, encoding: .utf8), let value = string as? O {
+                let   networkResponse = NetworkingResponse<O>(router: router, data: data, request: request, response: response, object: value)
+                return  await handleResponse(networkResponse: networkResponse, session: session, request: request)
+            }
+            return .failure(NetworkingError("Response is not in correct format."))
+            
+        } catch let DecodingError.typeMismatch(type, context) {
+            let message = "Type '\(type)' mismatch: \(context.debugDescription)"
+            return .failure(NetworkingError(message))
+        } catch  let DecodingError.keyNotFound(key, context) {
+            let message = "Key '\(key)' mismatch: \(context.debugDescription)"
+            return .failure(NetworkingError(message))
+        } catch let DecodingError.valueNotFound(value, context) {
+            let message = "value '\(value)' mismatch: \(context.debugDescription)"
+            return .failure(NetworkingError(message))
+        } catch {
+            return .failure(NetworkingError(error))
+        }
     }
     
-    private func multipartRequest<O>(_ session: URLSession, request: URLRequest, parameters: Parameters, multipart: [File]) async -> NetworkResult<ApiResponse<O>> {
+    
+    private func handleResponse<O>(networkResponse: NetworkingResponse<O>, session: URLSession, request: URLRequest) async -> RequestMaker.NetworkResult<O> {
+        if networkResponse.statusCode == 401 && router.needsAuthorization {
+            guard await refreshToken() else {
+                return .failure(NetworkingError("TOKEN_EXPIRE"))
+            }
+            return await normalRequest(session, request: request)
+        }
+        return .success(networkResponse)
+    }
+    
+    private func multipartRequest<O>(_ session: URLSession, request: URLRequest, parameters: Parameters, multipart: [File]) async -> NetworkResult<O> {
         let boundary = UUID().uuidString
         var request = request
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         let bodyData = createBodyWithMultipleImages(parameters: parameters, multipart: multipart, boundary: boundary)
         request.httpBody = bodyData
         
-        return await callApi(session, request: request)
-    }
-    
-    private func callApi<O>(_ session: URLSession, request: URLRequest)  async -> NetworkResult<ApiResponse<O>> {
-        do {
-            let  (data, response)   = try await session.data(for: request)
-            Logger.log(response, request: request, data: data)
-            let object =  try JSONDecoder().decode(ApiResponse<O>.self, from: data)
-            return .success(NetworkingResponse.networkResponse(for: router, data: data, request: request, response: response, object: object))
-        } catch {
-            return .failure(NetworkingError(error))
-        }
+        return await normalRequest(session, request: request)
     }
     
     private func createBodyWithMultipleImages(parameters: Parameters, multipart: [File], boundary: String) -> Data {
